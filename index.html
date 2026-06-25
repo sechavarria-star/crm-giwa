@@ -37,7 +37,7 @@
 
   <script>
     var CLIENT_ID = '527644613244-ul6hntt2bl0d4hktnd89k2g66qhpicms.apps.googleusercontent.com';
-    var APP = 'https://script.google.com/macros/s/AKfycbyjBWsE_usCE3lCMr7vnI02gLIlyry3mYBEA68cOYgvlMNfROv_mIuWxuBQE5jcn3wx/exec';
+    var APP = 'https://script.google.com/macros/s/AKfycbwRQJd2uTkNDLHy8msnTcyfHJZkpXZxW9YovOwnwd6YHSPqEh5kNEf8qsOrRyI2lYrC/exec';
     var DOMAIN = 'giwa-ia.com';
 
     function jwtPayload(t) {
@@ -45,18 +45,31 @@
       catch (e) { return {}; }
     }
 
+    var CRM_JWT = '';
+
     function onCredential(resp) {
       var p = jwtPayload(resp.credential);
       var email = String(p.email || '').toLowerCase();
       if (p.hd === DOMAIN || email.split('@')[1] === DOMAIN) {
+        CRM_JWT = resp.credential;
         document.getElementById('login').style.display = 'none';
         var f = document.getElementById('frame');
-        f.src = APP + '?t=' + encodeURIComponent(resp.credential);
+        f.src = APP + '?t=' + encodeURIComponent(CRM_JWT);
         f.style.display = 'block';
       } else {
         document.getElementById('err').textContent = 'La cuenta ' + (email || '') + ' no pertenece a @' + DOMAIN + '.';
       }
     }
+
+    // El CRM (dentro del iframe) pide cambiar de módulo sin salir de crm.giwa-ia.com.
+    window.addEventListener('message', function (e) {
+      var d = e.data || {};
+      if (d.giwa !== 'nav' || !d.page) return;
+      var url = APP + '?page=' + encodeURIComponent(d.page);
+      if (d.sid) url += '&sid=' + encodeURIComponent(d.sid);
+      else if (CRM_JWT) url += '&t=' + encodeURIComponent(CRM_JWT);
+      document.getElementById('frame').src = url;
+    });
 
     window.onload = function () {
       google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onCredential, auto_select: true });
