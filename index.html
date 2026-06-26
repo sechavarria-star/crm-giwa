@@ -66,7 +66,7 @@
       var d = e.data || {};
       if (d.giwa !== 'nav' || !d.page) return;
       var url = APP + '?page=' + encodeURIComponent(d.page);
-      if (d.sid) url += '&sid=' + encodeURIComponent(d.sid);
+      if (d.sid) url += '&ses=' + encodeURIComponent(d.sid);
       else if (CRM_JWT) url += '&t=' + encodeURIComponent(CRM_JWT);
       document.getElementById('frame').src = url;
     });
