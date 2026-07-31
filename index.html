@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GIWA · CRM</title>
+  <link rel="icon" href="favicon.ico">
+  <script src="https://accounts.google.com/gsi/client" async></script>
+  <style>
+    html, body { margin: 0; height: 100%; background: #060716; overflow: hidden;
+      font-family: -apple-system, Segoe UI, Roboto, sans-serif; color: #e8e8f0; }
+    #frame { display: none; border: 0; width: 100%; height: 100vh; }
+    #login { display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100vh; text-align: center; padding: 0 20px;
+      background: radial-gradient(1200px 600px at 20% -10%, #1b1b3a 0%, #060716 60%); }
+    #login .lock { width: 74px; height: 74px; border-radius: 50%; font-size: 32px; margin-bottom: 22px;
+      display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0090FF, #A855F7); }
+    #login h1 { margin: 0 0 12px; font-size: 25px; font-weight: 500; }
+    #login p { color: #9a9ab5; font-size: 15px; max-width: 440px; line-height: 1.6; margin: 0 0 26px; }
+    #login p b { color: #c9c9e0; }
+    #gbtn { min-height: 44px; }
+    #err { color: #ff8c9b; font-size: 13px; min-height: 18px; margin-top: 14px; }
+    .brand { position: fixed; top: 18px; left: 24px; font-size: 20px; font-weight: 600; letter-spacing: .5px; }
+    .brand .b { color: #0090FF; } .brand .p { color: #A855F7; }
+  </style>
+</head>
+<body>
+  <div id="login">
+    <div class="brand">GIWA<span class="b"> {</span><span class="p">IA</span><span class="b">}</span></div>
+    <div class="lock">🔒</div>
+    <h1>CRM interno</h1>
+    <p>Esta sección es exclusiva para el equipo de <b>GIWA</b>. Ingresá con tu cuenta <b>@giwa-ia.com</b>.</p>
+    <div id="gbtn"></div>
+    <div id="err"></div>
+  </div>
+  <iframe id="frame" allow="fullscreen; clipboard-read; clipboard-write" title="GIWA · CRM"></iframe>
+
+  <script>
+    var CLIENT_ID = '527644613244-ul6hntt2bl0d4hktnd89k2g66qhpicms.apps.googleusercontent.com';
+    var APP = 'https://script.google.com/macros/s/AKfycbwrmKKgA9eIDysGFNa1Hmn_0k-a4cBtq8rQZ62wj5pRTs4ABRfaxTMoqDLFiVnr_z6u/exec';
+    var DOMAIN = 'giwa-ia.com';
+
+    function jwtPayload(t) {
+      try { return JSON.parse(decodeURIComponent(escape(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))))); }
+      catch (e) { return {}; }
+    }
+
+    var CRM_JWT = '';
+
+    function onCredential(resp) {
+      var p = jwtPayload(resp.credential);
+      var email = String(p.email || '').toLowerCase();
+      if (p.hd === DOMAIN || email.split('@')[1] === DOMAIN) {
+        CRM_JWT = resp.credential;
+        document.getElementById('login').style.display = 'none';
+        var f = document.getElementById('frame');
+        f.src = APP + '?t=' + encodeURIComponent(CRM_JWT);
+        f.style.display = 'block';
+      } else {
+        document.getElementById('err').textContent = 'La cuenta ' + (email || '') + ' no pertenece a @' + DOMAIN + '.';
+      }
+    }
+
+    // El CRM (dentro del iframe) pide cambiar de módulo sin salir de crm.giwa-ia.com.
+    window.addEventListener('message', function (e) {
+      var d = e.data || {};
+      if (d.giwa !== 'nav' || !d.page) return;
+      var url = APP + '?page=' + encodeURIComponent(d.page);
+      if (d.sid) url += '&ses=' + encodeURIComponent(d.sid);
+      else if (CRM_JWT) url += '&t=' + encodeURIComponent(CRM_JWT);
+      document.getElementById('frame').src = url;
+    });
+
+    window.onload = function () {
+      google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onCredential, auto_select: true });
+      google.accounts.id.renderButton(document.getElementById('gbtn'),
+        { theme: 'filled_blue', size: 'large', text: 'signin_with', shape: 'pill' });
+      google.accounts.id.prompt();
+    };
+  </script>
+</body>
+</html>
